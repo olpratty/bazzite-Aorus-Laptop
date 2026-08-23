@@ -322,13 +322,17 @@ RUN --mount=type=cache,dst=/var/cache \
     printf '%s  %s\n' \
         "${AORUS_CC_PLUGIN_MANIFEST_SHA256}" \
         "/tmp/aorus-plugin/manifest.toml" | sha256sum -c - && \
-    mkdir -p /etc/coolercontrol/plugins/cc-plugin-aorus && \
+    mkdir -p /usr/lib/coolercontrol/plugins/cc-plugin-aorus && \
     install -m755 \
         /tmp/aorus-plugin/cc-plugin-aorus \
-        /etc/coolercontrol/plugins/cc-plugin-aorus/cc-plugin-aorus && \
+        /usr/lib/coolercontrol/plugins/cc-plugin-aorus/cc-plugin-aorus && \
     install -m644 \
         /tmp/aorus-plugin/manifest.toml \
-        /etc/coolercontrol/plugins/cc-plugin-aorus/manifest.toml && \
+        /usr/lib/coolercontrol/plugins/cc-plugin-aorus/manifest.toml && \
+    printf '%s\n' \
+        'd /var/lib/coolercontrol/plugins 0755 root root -' \
+        'C /var/lib/coolercontrol/plugins/cc-plugin-aorus - - - - /usr/lib/coolercontrol/plugins/cc-plugin-aorus' \
+        > /usr/lib/tmpfiles.d/aorus-coolercontrol-plugin.conf && \
     rm -rf /tmp/aorus-plugin && \
     dnf5 -y swap \
         --repo terra \
