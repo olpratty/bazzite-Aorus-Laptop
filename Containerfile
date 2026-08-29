@@ -324,7 +324,7 @@ RUN --mount=type=cache,dst=/var/cache \
         /usr/lib/coolercontrol/plugins/cc-plugin-aorus/manifest.toml && \
     printf '%s\n' \
         'd /var/lib/coolercontrol/plugins 0755 root root -' \
-        'C /var/lib/coolercontrol/plugins/cc-plugin-aorus - - - - /usr/lib/coolercontrol/plugins/cc-plugin-aorus' \
+        'L+ /var/lib/coolercontrol/plugins/cc-plugin-aorus - - - - /usr/lib/coolercontrol/plugins/cc-plugin-aorus' \
         > /usr/lib/tmpfiles.d/aorus-coolercontrol-plugin.conf && \
     rm -rf /tmp/aorus-plugin && \
     dnf5 -y swap \
