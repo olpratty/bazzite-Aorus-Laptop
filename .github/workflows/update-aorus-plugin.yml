@@ -1,0 +1,107 @@
+name: Update AORUS CoolerControl plugin
+
+on:
+  repository_dispatch:
+    types:
+      - aorus-plugin-release
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  update:
+    name: Update plugin pin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate release information
+        shell: bash
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+          BINARY_SHA256: ${{ github.event.client_payload.binary_sha256 }}
+          MANIFEST_SHA256: ${{ github.event.client_payload.manifest_sha256 }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid plugin version: $VERSION"
+            exit 1
+          fi
+
+          if [[ ! "$BINARY_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Invalid binary SHA256: $BINARY_SHA256"
+            exit 1
+          fi
+
+          if [[ ! "$MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Invalid manifest SHA256: $MANIFEST_SHA256"
+            exit 1
+          fi
+
+          echo "Plugin version:  $VERSION"
+          echo "Binary SHA256:   $BINARY_SHA256"
+          echo "Manifest SHA256: $MANIFEST_SHA256"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Update Containerfile pins
+        shell: bash
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+          BINARY_SHA256: ${{ github.event.client_payload.binary_sha256 }}
+          MANIFEST_SHA256: ${{ github.event.client_payload.manifest_sha256 }}
+        run: |
+          set -euo pipefail
+
+          sed -i \
+            "s/^ARG AORUS_CC_PLUGIN_VERSION=.*/ARG AORUS_CC_PLUGIN_VERSION=\"${VERSION}\"/" \
+            Containerfile
+
+          sed -i \
+            "s/^ARG AORUS_CC_PLUGIN_SHA256=.*/ARG AORUS_CC_PLUGIN_SHA256=\"${BINARY_SHA256}\"/" \
+            Containerfile
+
+          sed -i \
+            "s/^ARG AORUS_CC_PLUGIN_MANIFEST_SHA256=.*/ARG AORUS_CC_PLUGIN_MANIFEST_SHA256=\"${MANIFEST_SHA256}\"/" \
+            Containerfile
+
+          grep -E \
+            '^ARG AORUS_CC_PLUGIN_(VERSION|SHA256|MANIFEST_SHA256)=' \
+            Containerfile
+
+          git diff --check
+
+      - name: Commit plugin update
+        id: commit
+        shell: bash
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- Containerfile; then
+            echo "Plugin pins are already current."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add Containerfile
+          git commit -m "Update AORUS CoolerControl plugin to v${VERSION}"
+          git push origin HEAD:main
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger Bazzite build
+        if: steps.commit.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run build.yml --ref main
