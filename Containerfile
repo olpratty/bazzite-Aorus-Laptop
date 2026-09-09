@@ -60,6 +60,8 @@ ARG FEDORA_VERSION="${FEDORA_VERSION:-44}"
 ARG SHA_HEAD_SHORT="${SHA_HEAD_SHORT}"
 ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
+ARG AORUS_GIGABYTED_VERSION="1.0.1"
+ARG AORUS_GIGABYTED_SHA256="117352ce3f023631ec7a9736e523fb5b390703bd97b721f2975e1882f0f19e11"
 ARG AORUS_CC_PLUGIN_VERSION="0.1.1"
 ARG AORUS_CC_PLUGIN_SHA256="f26811d3a510f14fbd5d959c6d3014f6d55066bd7c9968e3ae550d658e929ade"
 ARG AORUS_CC_PLUGIN_MANIFEST_SHA256="48e113cf4d04e7dcbc2de263e6915a4a5e764fe8931751fe06fa4117efc9fc61"
@@ -300,6 +302,28 @@ RUN --mount=type=cache,dst=/var/cache \
         coolercontrol \
         coolercontrold \
         liquidctl && \
+    mkdir -p /tmp/aorus-gigabyted && \
+    /ctx/ghcurl \
+        "https://github.com/olpratty/gigabyte-dbus/releases/download/v${AORUS_GIGABYTED_VERSION}/gigabyted-linux-x86_64.tar.gz" \
+        -Lo /tmp/aorus-gigabyted/package.tar.gz && \
+    printf '%s  %s\n' \
+        "${AORUS_GIGABYTED_SHA256}" \
+        "/tmp/aorus-gigabyted/package.tar.gz" | sha256sum -c - && \
+    tar -xzf /tmp/aorus-gigabyted/package.tar.gz \
+        -C /tmp/aorus-gigabyted && \
+    install -Dm755 /tmp/aorus-gigabyted/gigabyted \
+        /usr/bin/gigabyted && \
+    install -Dm644 /tmp/aorus-gigabyted/gigabyted.service \
+        /usr/lib/systemd/system/gigabyted.service && \
+    install -Dm644 /tmp/aorus-gigabyted/gigabyted.conf \
+        /usr/share/dbus-1/system.d/gigabyted.conf && \
+    install -Dm644 /tmp/aorus-gigabyted/gigabyted.sysusers \
+        /usr/lib/sysusers.d/gigabyted.conf && \
+    install -Dm644 /tmp/aorus-gigabyted/LICENSE \
+        /usr/share/licenses/gigabyte-dbus/LICENSE && \
+    systemd-sysusers /usr/lib/sysusers.d/gigabyted.conf && \
+    systemctl enable gigabyted.service && \
+    rm -rf /tmp/aorus-gigabyted && \
     mkdir -p /tmp/aorus-plugin && \
     /ctx/ghcurl \
         "https://github.com/olpratty/aorus-coolercontrol-plugin/releases/download/v${AORUS_CC_PLUGIN_VERSION}/cc-plugin-aorus" \
