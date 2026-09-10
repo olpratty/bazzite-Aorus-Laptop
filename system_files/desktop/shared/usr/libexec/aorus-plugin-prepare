@@ -1,0 +1,37 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+source_dir=/usr/lib/coolercontrol/plugins/cc-plugin-aorus
+runtime_dir=/var/lib/coolercontrol/plugins/cc-plugin-aorus
+
+test -f "$source_dir/cc-plugin-aorus"
+test -f "$source_dir/manifest.toml"
+
+install -d -m755 /var/lib/coolercontrol/plugins
+stage=$(mktemp -d /var/lib/coolercontrol/.aorus-plugin-stage.XXXXXX)
+
+cleanup() {
+    if [[ ! -e "$runtime_dir" && ! -L "$runtime_dir" ]]; then
+        if [[ -e "$stage/previous" || -L "$stage/previous" ]]; then
+            mv -T "$stage/previous" "$runtime_dir"
+        fi
+    fi
+    rm -rf -- "$stage"
+}
+trap cleanup EXIT
+
+install -d -m755 "$stage/plugin"
+install -m755 "$source_dir/cc-plugin-aorus" "$stage/plugin/cc-plugin-aorus"
+install -m644 "$source_dir/manifest.toml" "$stage/plugin/manifest.toml"
+
+# Match the packaged files' SELinux labels, including the executable label.
+if selinuxenabled; then
+    chcon --reference="$source_dir" "$stage/plugin"
+    chcon --reference="$source_dir/cc-plugin-aorus" "$stage/plugin/cc-plugin-aorus"
+    chcon --reference="$source_dir/manifest.toml" "$stage/plugin/manifest.toml"
+fi
+
+if [[ -e "$runtime_dir" || -L "$runtime_dir" ]]; then
+    mv -T "$runtime_dir" "$stage/previous"
+fi
+mv -T "$stage/plugin" "$runtime_dir"
