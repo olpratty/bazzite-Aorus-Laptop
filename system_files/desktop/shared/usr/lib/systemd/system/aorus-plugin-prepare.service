@@ -1,0 +1,9 @@
+[Unit]
+Description=Prepare packaged AORUS CoolerControl plugin
+After=systemd-tmpfiles-setup.service
+Before=coolercontrold.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/aorus-plugin-prepare
+RemainAfterExit=yes
