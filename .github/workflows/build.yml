@@ -127,16 +127,16 @@ jobs:
         include:
           - fedora_version: 44
             kernel_flavor: ogc
-            kernel_version: 7.2.3-ogc3.1.fc44
+            kernel_version: 7.2.7-ogc1.1.fc44
             base_image_flavor: main
             arch: x86_64
         # Disabled: this fork only builds bazzite-nvidia-open
         # - image: bazzite-nvidia
         #   kernel_flavor: ogc-lts
-        #   kernel_version: 6.18.49-ogc1.1.fc44
+        #   kernel_version: 6.18.52-ogc1.1.fc44
         # - image: bazzite-gnome-nvidia
         #   kernel_flavor: ogc-lts
-        #   kernel_version: 6.18.49-ogc1.1.fc44
+        #   kernel_version: 6.18.52-ogc1.1.fc44
     steps:
       - name: Show disk space
         run: sudo df -h
@@ -151,7 +151,7 @@ jobs:
           fi
 
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
 
       # The image registry name must be lower-case, but GitHub usernames can be capitalized.
       - name: Get lower-case equivalent of the repository owner's username
@@ -673,7 +673,7 @@ jobs:
 
       - name: Install ORAS
         if: github.event_name != 'pull_request'
-        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
+        uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4 # v2.0.2
 
       - name: Login to GitHub Container Registry with ORAS
         if: github.event_name != 'pull_request'
